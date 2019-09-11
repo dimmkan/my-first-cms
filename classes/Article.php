@@ -37,6 +37,11 @@ class Article
     */
     public $content = null;
     /**
+    * @var string Поле для задания №1 - 50 первых символов
+    * поля content + "..."
+    */
+    public $shortContent = null;
+    /**
     * Устанавливаем свойства с помощью значений в заданном массиве
     *
     * @param assoc Значения свойств
@@ -83,10 +88,26 @@ class Article
       }
       
       if (isset($data['content'])) {
-          $this->content = $data['content'];  
-      }
-    }
-
+            $this->content = $data['content'];
+            /**
+             * Создадим анонимную функцию, проверяющую, больше или равна ли длина поля content
+             * 50 символов, если больше или равна - обрезаем 50 и добавлем "...", если меньше -
+             * выводим всё.
+             * 
+             * @param string $string Проверяемая строка
+             * @param int $start Начальная позиция среза - по умолчанию 0
+             * @param int $length Конечная позиция среза - по умолчанию 50
+             * @param string $trimmaker Многоточие, добавляемое в конец
+             * @return string Результирующая строка
+             */
+            $func = function($string, $start = 0, $length = 50, $trimmarker = '...'){
+                $len = strlen(trim($string));
+                $newstring = ( ($len >= $length) && ($len != 0) ) ? rtrim(mb_substr($string, $start, $length - strlen($trimmarker))) . $trimmarker : $string;
+                return $newstring;
+            };
+            $this->shortContent = $func($data['content']);            
+        }
+    } 
 
     /**
     * Устанавливаем свойства с помощью значений формы редактирования записи в заданном массиве
