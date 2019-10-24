@@ -42,6 +42,11 @@ class Article
     */
     public $shortContent = null;
     /**
+    * @var int Поле для задания №2 - признак активности
+    * 
+    */
+    public $actions = 0; 
+    /**
     * Устанавливаем свойства с помощью значений в заданном массиве
     *
     * @param assoc Значения свойств
@@ -106,7 +111,14 @@ class Article
                 return $newstring;
             };
             $this->shortContent = $func($data['content']);            
-        }
+      }
+      /**
+       * Установим поле actions
+       */
+      if(isset($data['actions'])){
+          $this->actions = $data['actions'];
+      }
+       
     } 
 
     /**
@@ -163,13 +175,13 @@ class Article
     * @return Array|false Двух элементный массив: results => массив объектов Article; totalRows => общее количество строк
     */
     public static function getList($numRows=1000000, 
-            $categoryId=null, $order="publicationDate DESC") 
+            $categoryId=null, $actionFilter="", $order="publicationDate DESC") 
     {
         $conn = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
-        $categoryClause = $categoryId ? "WHERE categoryId = :categoryId" : "";
+        $categoryClause = $categoryId ? "WHERE categoryId = :categoryId" : "";        
         $sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) 
                 AS publicationDate
-                FROM articles $categoryClause
+                FROM articles $categoryClause ".$actionFilter."
                 ORDER BY  $order  LIMIT :numRows";
         
         $st = $conn->prepare($sql);
@@ -222,13 +234,14 @@ class Article
 
         // Вставляем статью
         $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
-        $sql = "INSERT INTO articles ( publicationDate, categoryId, title, summary, content ) VALUES ( FROM_UNIXTIME(:publicationDate), :categoryId, :title, :summary, :content )";
+        $sql = "INSERT INTO articles ( publicationDate, categoryId, title, summary, content, actions ) VALUES ( FROM_UNIXTIME(:publicationDate), :categoryId, :title, :summary, :content, :actions )";
         $st = $conn->prepare ( $sql );
         $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
         $st->bindValue( ":categoryId", $this->categoryId, PDO::PARAM_INT );
         $st->bindValue( ":title", $this->title, PDO::PARAM_STR );
         $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
         $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
+        $st->bindValue( ":actions", $this->actions, PDO::PARAM_STR );
         $st->execute();
         $this->id = $conn->lastInsertId();
         $conn = null;
@@ -248,7 +261,7 @@ class Article
       $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
       $sql = "UPDATE articles SET publicationDate=FROM_UNIXTIME(:publicationDate),"
               . " categoryId=:categoryId, title=:title, summary=:summary,"
-              . " content=:content WHERE id = :id";
+              . " content=:content, actions=:actions WHERE id = :id";
       
       $st = $conn->prepare ( $sql );
       $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
@@ -256,6 +269,7 @@ class Article
       $st->bindValue( ":title", $this->title, PDO::PARAM_STR );
       $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
       $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
+      $st->bindValue( ":actions", $this->actions, PDO::PARAM_STR );
       $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
       $st->execute();
       $conn = null;

@@ -36,7 +36,8 @@ function archive()
     
     $results['category'] = Category::getById( $categoryId );
     
-    $data = Article::getList( 100000, $results['category'] ? $results['category']->id : null );
+    $data = Article::getList( 100000, $results['category'] ? $results['category']->id : null, 
+            $results['category'] ? " AND actions = 1" : "WHERE actions = 1");
     
     $results['articles'] = $data['results'];
     $results['totalRows'] = $data['totalRows'];
@@ -86,7 +87,7 @@ function viewArticle()
 function homepage() 
 {
     $results = array();
-    $data = Article::getList(HOMEPAGE_NUM_ARTICLES);
+    $data = Article::getList(HOMEPAGE_NUM_ARTICLES, null, "WHERE actions = 1");
     $results['articles'] = $data['results'];
     $results['totalRows'] = $data['totalRows'];
     
