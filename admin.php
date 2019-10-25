@@ -90,6 +90,7 @@ function newArticle() {
 //            echo "<pre>";
 //            В $_POST данные о статье сохраняются корректно
         // Пользователь получает форму редактирования статьи: сохраняем новую статью
+        (int)$_POST['actions'] = ($_POST['actions'] == "on" ? 1 : 0);
         $article = new Article();
         $article->storeFormValues($_POST);
 //            echo "<pre>";
