@@ -38,6 +38,18 @@ switch ($action) {
     case 'deleteCategory':
         deleteCategory();
         break;
+    case 'listUsers':
+        listUsers();
+        break;
+    case 'newUser':
+        newUser();
+        break;
+    case 'editUser':
+        editUser();
+        break;
+    case 'deleteUser':
+        deleteUser();
+        break;
     default:
         listArticles();
 }
@@ -53,16 +65,21 @@ function login() {
     if (isset($_POST['login'])) {
 
         // Пользователь получает форму входа: попытка авторизировать пользователя
-
-        if ($_POST['username'] == ADMIN_USERNAME && $_POST['password'] == ADMIN_PASSWORD) {
-
-            // Вход прошел успешно: создаем сессию и перенаправляем на страницу администратора
-            $_SESSION['username'] = ADMIN_USERNAME;
-            header("Location: admin.php");
+        // Проверим наличие пользователя в базе
+        if (User::authorizedUser($_POST['username'], $_POST['password'])) {
+            //Проверим активность пользователя
+            if(!User::actionUser($_POST['username'], $_POST['password'])){                
+                $results['errorMessage'] = "Пользователь неактивен.";
+                require( TEMPLATE_PATH . "/admin/loginForm.php" );            
+            }else {
+                // Вход прошел успешно: создаем сессию и перенаправляем на страницу администратора
+                $_SESSION['username'] = $_POST['username'];
+                header("Location: admin.php");
+            }
         } else {
 
             // Ошибка входа: выводим сообщение об ошибке для пользователя
-            $results['errorMessage'] = "Неправильный пароль, попробуйте ещё раз.";
+            $results['errorMessage'] = "Неправильный логин или пароль, попробуйте ещё раз.";
             require( TEMPLATE_PATH . "/admin/loginForm.php" );
         }
     } else {
@@ -289,3 +306,100 @@ function deleteCategory() {
     $category->delete();
     header("Location: admin.php?action=listCategories&status=categoryDeleted");
 }
+
+/**
+ * Работа с пользователями
+ */
+/**
+ * Функция выводит всех пользователей из БД
+ */
+function listUsers(){
+    $results = array();
+    
+    $data = User::getList();
+    $results['users'] = $data['results'];
+    $results['totalRows'] = $data['totalRows'];
+    $results['pageTitle'] = "Все пользователи";
+    
+    if (isset($_GET['error'])) { // вывод сообщения об ошибке (если есть)
+        if ($_GET['error'] == "userNotFound")
+            $results['errorMessage'] = "Error: User not found.";
+    }
+
+    if (isset($_GET['status'])) { // вывод сообщения (если есть)
+        if ($_GET['status'] == "changesSaved") {
+            $results['statusMessage'] = "Your changes have been saved.";
+        }
+        if ($_GET['status'] == "userDeleted") {
+            $results['statusMessage'] = "User deleted.";
+        }
+    }
+
+    require(TEMPLATE_PATH . "/admin/listUsers.php" );
+    
+}
+
+/**
+ * Создание нового пользователя
+ */
+function newUser() {
+    $results = array();
+    $results['pageTitle'] = "Новый пользователь";
+    $results['formAction'] = "newUser";
+    
+    if (isset($_POST['saveChanges'])) {
+        // Пользователь получает форму редактирования пользователей: сохраняем нового пользователя
+        (int)$_POST['actions'] = ($_POST['actions'] == "on" ? 1 : 0);
+        $user = new User();
+        $user->storeFormValues($_POST);
+        $user->insert();
+        header("Location: admin.php?action=listUsers&status=changesSaved");
+    } elseif (isset($_POST['cancel'])) {
+        // Пользователь сбросил результаты редактирования: возвращаемся к списку пользователей
+        header("Location: admin.php?action=listUsers");
+    } else {
+        // Пользователь еще не получил форму редактирования: выводим форму
+        $results['user'] = new User;        
+        require( TEMPLATE_PATH . "/admin/editUser.php" );
+    }
+}
+/**
+ * Редактирование пользователя
+ */
+function editUser() {
+    $results = array();
+    $results['pageTitle'] = "Редактирование пользователя";
+    $results['formAction'] = "editUser";
+
+    if (isset($_POST['saveChanges'])) {       
+        if (!$user = User::getUserByID((int) $_POST['userId'])) {
+            header("Location: admin.php?action=listUsers&error=userNotFound");
+            return;
+        }
+        //В зависимости от состояния чек-бокса переопределим значение поля
+        (int)$_POST['actions'] = ($_POST['actions'] == "on" ? 1 : 0);        
+        $user->storeFormValues($_POST);
+        $user->update();
+        header("Location: admin.php?action=listUsers&status=changesSaved");        
+    } elseif (isset($_POST['cancel'])) {
+        // Пользователь отказался от результатов редактирования: возвращаемся к списку пользователей
+        header("Location: admin.php?action=listUsers");
+    } else {
+        // Пользвоатель еще не получил форму редактирования: выводим форму
+        $results['user'] = User::getUserByID((int) $_GET['userId']);        
+        require(TEMPLATE_PATH . "/admin/editUser.php");
+    }
+}
+/**
+ * Удаление пользователя
+ */
+function deleteUser() {
+    if (!$user = User::getUserByID((int) $_GET['userId'])) {
+        header("Location: admin.php?action=listUsers&error=userNotFound");
+        return;
+    }
+    $user->delete();
+    header("Location: admin.php?action=listUsers&status=userDeleted");
+}
+
+
