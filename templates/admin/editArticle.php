@@ -33,10 +33,20 @@
 
               <li>
                 <label for="categoryId">Article Category</label>
-                <select name="categoryId">
+                <select name="categoryId" id="categoryId">
                   <option value="0"<?php echo !$results['article']->categoryId ? " selected" : ""?>>(none)</option>
                 <?php foreach ( $results['categories'] as $category ) { ?>
                   <option value="<?php echo $category->id?>"<?php echo ( $category->id == $results['article']->categoryId ) ? " selected" : ""?>><?php echo htmlspecialchars( $category->name )?></option>
+                <?php } ?>
+                </select>
+              </li>
+              
+              <li>
+                <label for="subcategoryId">Article Subcategory</label>
+                <select name="subcategoryId" id="subcategoryId">
+                  <option value="0"<?php echo !$results['article']->subcategoryId ? " selected" : ""?>>(none)</option>
+                <?php foreach ( $results['subcategories'] as $subcategory ) { ?>
+                  <option value="<?php echo $subcategory->id?>"<?php echo ( $subcategory->id == $results['article']->subcategoryId ) ? " selected" : ""?>><?php echo htmlspecialchars( $subcategory->description )?></option>
                 <?php } ?>
                 </select>
               </li>

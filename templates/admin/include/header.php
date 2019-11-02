@@ -8,6 +8,7 @@
                 echo "<a href=\"admin.php?action=listUsers\">Список пользователей</a>";
             }
         ?>
+        <a href="admin.php?action=listSubcategories">Список подкатегорий</a>
         <a href="admin.php?action=logout"?>Log Out</a>
     </p>
 </div>

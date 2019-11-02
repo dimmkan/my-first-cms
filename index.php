@@ -28,31 +28,53 @@ function initApplication()
     }
 }
 
-function archive() 
-{
+function archive() {
     $results = [];
     
-    $categoryId = ( isset( $_GET['categoryId'] ) && $_GET['categoryId'] ) ? (int)$_GET['categoryId'] : null;
-    
-    $results['category'] = Category::getById( $categoryId );
-    
-    $data = Article::getList( 100000, $results['category'] ? $results['category']->id : null, 
-            $results['category'] ? " AND actions = 1" : "WHERE actions = 1");
-    
-    $results['articles'] = $data['results'];
-    $results['totalRows'] = $data['totalRows'];
-    
-    $data = Category::getList();
-    $results['categories'] = array();
-    
-    foreach ( $data['results'] as $category ) {
-        $results['categories'][$category->id] = $category;
+    if (isset($_GET['subcategoryId'])) {
+        $subcategoryId = ($_GET['subcategoryId']);
+        $results['subcategory'] = Subcategory::getById($subcategoryId);
+
+        $data = Article::getListBySubcatId(100000, $results['subcategory'] ? $results['subcategory']->id : null,
+                        $results['subcategory'] ? " AND actions = 1" : "WHERE actions = 1");
+
+        $results['articles'] = $data['results'];
+        $results['totalRows'] = $data['totalRows'];
+
+        $data = Subcategory::getList();
+        $results['subcategories'] = array();
+
+        foreach ($data['results'] as $subcategory) {
+            $results['subcategories'][$subcategory->id] = $subcategory;
+        }
+
+        $results['pageHeading'] = $results['subcategory'] ? $results['subcategory']->description : "Article Archive";
+        $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
+
+        require( TEMPLATE_PATH . "/archive.php" );
+    }else {
+        $categoryId = (isset($_GET['categoryId']) && $_GET['categoryId']) ? (int) $_GET['categoryId'] : null;
+
+        $results['category'] = Category::getById($categoryId);
+
+        $data = Article::getList(100000, $results['category'] ? $results['category']->id : null,
+                        $results['category'] ? " AND actions = 1" : "WHERE actions = 1");
+
+        $results['articles'] = $data['results'];
+        $results['totalRows'] = $data['totalRows'];
+
+        $data = Category::getList();
+        $results['categories'] = array();
+
+        foreach ($data['results'] as $category) {
+            $results['categories'][$category->id] = $category;
+        }
+
+        $results['pageHeading'] = $results['category'] ? $results['category']->name : "Article Archive";
+        $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
+
+        require( TEMPLATE_PATH . "/archive.php" );
     }
-    
-    $results['pageHeading'] = $results['category'] ?  $results['category']->name : "Article Archive";
-    $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
-    
-    require( TEMPLATE_PATH . "/archive.php" );
 }
 
 /**
@@ -95,7 +117,14 @@ function homepage()
     $results['categories'] = array();
     foreach ( $data['results'] as $category ) { 
         $results['categories'][$category->id] = $category;
-    } 
+    }
+    
+    $data = Subcategory::getList();
+    $results['subcategories'] = array();
+    
+    foreach ( $data['results'] as $subcategory ) {
+        $results['subcategories'][$subcategory->id] = $subcategory;
+    }
     
     $results['pageTitle'] = "Простая CMS на PHP";
     
