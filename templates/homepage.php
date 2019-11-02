@@ -25,6 +25,20 @@
                         <?php echo "Без категории"?>
                     </span>
                 <?php } ?>
+                
+                <?php if (isset($article->subcategoryId)) { ?>
+                    <span class="category">
+                        in 
+                        <a href=".?action=archive&amp;subcategoryId=<?php echo $article->subcategoryId?>">
+                            <?php echo htmlspecialchars($results['subcategories'][$article->subcategoryId]->description)?>
+                        </a>
+                    </span>
+                <?php } 
+                else { ?>
+                    <span class="category">
+                        <?php echo "Без подкатегории"?>
+                    </span>
+                <?php } ?>
             </h2>
             <p class="summary"><?php echo htmlspecialchars($article->shortContent)?></p>
             <img id="loader-identity" src="JS/ajax-loader.gif" alt="gif">
