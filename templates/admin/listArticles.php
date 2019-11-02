@@ -19,6 +19,7 @@
               <th>Category</th>
               <th>Subcategory</th>
               <th>Actions</th>
+              <th>Authors</th>
             </tr>
 
 <!--<?php echo "<pre>"; print_r ($results['articles'][2]->publicationDate); echo "</pre>"; ?> Обращаемся к дате массива $results. Дата = 0 -->
@@ -55,6 +56,15 @@
               </td>
               <td>
                  <?php echo $article->actions?> 
+              </td>
+              <td>
+                  <?php
+                    $res = "";
+                    foreach ($results['authors'] as $author){
+                        $res .= (in_array($author->id, $article->authors)) ? htmlspecialchars($author->login)."\r\n" : "";
+                    }
+                    echo $res;
+                  ?>
               </td>
             </tr>
 

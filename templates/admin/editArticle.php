@@ -52,6 +52,16 @@
               </li>
 
               <li>
+                <label for="authors[]">Authors</label>
+                <select name="authors[]" multiple="multiple">
+                    <?php foreach ($results['authors'] as $author) { ?>
+                        <option value="<?php echo $author->id?>"
+                            <?php echo (in_array($author->id, $results['article']->authors)) ? " selected" : ""?>><?php echo htmlspecialchars($author->login)?></option>
+                    <?php } ?>
+                </select>
+              </li>
+              
+              <li>
                 <label for="publicationDate">Publication Date</label>
                 <input type="date" name="publicationDate" id="publicationDate" placeholder="YYYY-MM-DD" required maxlength="10" value="<?php echo $results['article']->publicationDate ? date( "Y-m-d", $results['article']->publicationDate ) : "" ?>" />
               </li>

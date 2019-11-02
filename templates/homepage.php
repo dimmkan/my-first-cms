@@ -48,8 +48,20 @@
                 <li><a href=".?action=viewArticle&amp;articleId=<?php echo $article->id?>" class="ajaxArticleBodyByGet" data-contentId="<?php echo $article->id?>">Показать продолжение (GET)</a></li>
                 <li><a href=".?action=viewArticle&amp;articleId=<?php echo $article->id?>" class="">(POST) -- NEW</a></li>
                 <li><a href=".?action=viewArticle&amp;articleId=<?php echo $article->id?>" class="">(GET)  -- NEW</a></li>
-            </ul>
+            </ul>            
             <a href=".?action=viewArticle&amp;articleId=<?php echo $article->id?>" class="showContent" data-contentId="<?php echo $article->id?>">Показать полностью</a>
+                <span class="category">
+                    <?php
+                    $res = "";
+                    foreach ($results['authors'] as $author) {
+                        if (in_array($author->id, $article->authors)) {
+                            ?>
+                                <a href=".?action=viewArticleByAuthor&amp;authorId=<?php echo (in_array($author->id, $article->authors)) ? $author->id : "0"; ?>"><?php echo(in_array($author->id, $article->authors)) ? htmlspecialchars($author->login) : ""; ?></a>
+                            <?php }
+
+                            }
+                            ?>
+                </span>
         </li>
     <?php } ?>
     </ul>

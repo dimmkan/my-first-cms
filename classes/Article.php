@@ -51,6 +51,8 @@ class Article
      * @var int subcategoryId - part 4 
      */
     public $subcategoryId = null;
+    
+    public $authors = [];
     /**
     * Устанавливаем свойства с помощью значений в заданном массиве
     *
@@ -130,6 +132,14 @@ class Article
       if(isset($data['subcategoryId'])){
           $this->subcategoryId = $data['subcategoryId'];
       }
+      /**
+       * Поле автора
+       */
+      if(isset($data['authors'])) {
+          foreach($data['authors'] as $author){
+              $this->authors[] = $author;
+          }
+      }
        
     } 
 
@@ -138,10 +148,10 @@ class Article
     *
     * @param assoc Значения записи формы
     */
-    public function storeFormValues ( $params ) {
+    public function storeFormValues ($params) {
 
       // Сохраняем все параметры
-      $this->__construct( $params );
+      $this->__construct($params);
 
       // Разбираем и сохраняем дату публикации
       if ( isset($params['publicationDate']) ) {
@@ -170,6 +180,20 @@ class Article
         $st->execute();
 
         $row = $st->fetch();
+        
+        $sql = "SELECT DISTINCT userId FROM authors WHERE articleId=:articleId";
+        $st = $conn->prepare($sql);
+        $st->bindValue(":articleId", $id, PDO::PARAM_INT);
+        $st->execute();
+        
+        $authors = array();
+        
+        while($author = $st->fetch()){
+            $authors[] = $author['userId'];
+        }
+
+        $row['authors'] = $authors;
+        
         $conn = null;
         
         if ($row) { 
@@ -218,9 +242,27 @@ class Article
             $list[] = $article;
         }
 
+        
         // Получаем общее количество статей, которые соответствуют критерию
         $sql = "SELECT FOUND_ROWS() AS totalRows";
         $totalRows = $conn->query($sql)->fetch();
+                
+        foreach ($list as $article){
+                        
+            $sql2 = "SELECT DISTINCT userId FROM authors WHERE articleId=:articleId";
+            $st2 = $conn->prepare($sql2);
+            $st2->bindValue(":articleId", $article->id, PDO::PARAM_INT);
+            $st2->execute();
+
+            $authors = array();
+
+            while ($author = $st2->fetch()) {
+                $authors[] = $author['userId'];
+            }
+
+            $article->authors = $authors;
+
+        }
         $conn = null;
         
         return (array(
@@ -266,6 +308,24 @@ class Article
         // Получаем общее количество статей, которые соответствуют критерию
         $sql = "SELECT FOUND_ROWS() AS totalRows";
         $totalRows = $conn->query($sql)->fetch();
+        
+        foreach ($list as $article){
+                        
+            $sql2 = "SELECT DISTINCT userId FROM authors WHERE articleId=:articleId";
+            $st2 = $conn->prepare($sql2);
+            $st2->bindValue(":articleId", $article->id, PDO::PARAM_INT);
+            $st2->execute();
+
+            $authors = array();
+
+            while ($author = $st2->fetch()) {
+                $authors[] = $author['userId'];
+            }
+
+            $article->authors = $authors;
+
+        }
+        
         $conn = null;
         
         return (array(
@@ -275,11 +335,53 @@ class Article
         );
     }
 
+    
+    public static function getListByAuthor($userId, $numRows = 1000000, $actionFilter = "", $order = "publicationDate DESC") {
+        $conn = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);        
+        $sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) 
+                AS publicationDate
+                FROM articles " . $actionFilter . "
+                ORDER BY  $order  LIMIT :numRows";
 
-    /**
-    * Вставляем текущий объект статьи в базу данных, устанавливаем его свойства.
-    */
+        $st = $conn->prepare($sql);
 
+        $st->bindValue(":numRows", $numRows, PDO::PARAM_INT);
+
+        $st->execute();
+        $list = array();
+
+        while ($row = $st->fetch()) {            
+            $article = new Article($row);
+            $list[] = $article;
+        }
+
+        
+        $res = array();
+        $totalRows = 0;
+        $sql2 = "SELECT DISTINCT articleId FROM authors WHERE userId=:userId";
+        $st2 = $conn->prepare($sql2);
+        $st2->bindValue(":userId", $userId, PDO::PARAM_INT);
+        $st2->execute();
+        
+        while($row = $st2->fetch()){
+            foreach ($list as $article){
+                if($article->id == $row['articleId']){
+                    $res[] = $article;
+                    $totalRows++;
+                }                
+            }
+        }
+                       
+        // Получаем общее количество статей, которые соответствуют критерию
+        
+        $conn = null;
+
+        return (array(
+            "results" => $res,
+            "totalRows" => $totalRows
+                )
+                );
+    }
 
     /**
     * Вставляем текущий объек Article в базу данных, устанавливаем его ID.
@@ -302,6 +404,16 @@ class Article
         $st->bindValue( ":actions", $this->actions, PDO::PARAM_STR );
         $st->execute();
         $this->id = $conn->lastInsertId();
+        
+        foreach ($this->authors as $userId) {
+            $sql = "INSERT INTO authors (userId, articleId) 
+                VALUES (:userId, :articleId)";
+            $st = $conn->prepare($sql);
+            $st->bindValue(":userId", $userId, PDO::PARAM_INT);
+            $st->bindValue(":articleId", $this->id, PDO::PARAM_INT);
+            $st->execute();
+        }
+        
         $conn = null;
     }
 
@@ -309,29 +421,44 @@ class Article
     * Обновляем текущий объект статьи в базе данных
     */
     public function update() {
-
       // Есть ли у объекта статьи ID?
-      if ( is_null( $this->id ) ) trigger_error ( "Article::update(): "
-              . "Attempt to update an Article object "
-              . "that does not have its ID property set.", E_USER_ERROR );
+        if (is_null($this->id))
+            trigger_error("Article::update(): "
+                    . "Attempt to update an Article object "
+                    . "that does not have its ID property set.", E_USER_ERROR);
 
-      // Обновляем статью
-      $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
-      $sql = "UPDATE articles SET publicationDate=FROM_UNIXTIME(:publicationDate),"
-              . " categoryId=:categoryId, title=:title, summary=:summary,"
-              . " content=:content, actions=:actions, subcategoryId=:subcategoryId WHERE id = :id";
-      
-      $st = $conn->prepare ( $sql );
-      $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
-      $st->bindValue( ":categoryId", $this->categoryId, PDO::PARAM_INT );
-      $st->bindValue( ":subcategoryId", $this->subcategoryId, PDO::PARAM_INT );
-      $st->bindValue( ":title", $this->title, PDO::PARAM_STR );
-      $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
-      $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
-      $st->bindValue( ":actions", $this->actions, PDO::PARAM_STR );
-      $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
-      $st->execute();
-      $conn = null;
+        // Обновляем статью
+        $conn = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
+        $sql = "UPDATE articles SET publicationDate=FROM_UNIXTIME(:publicationDate),"
+                . " categoryId=:categoryId, title=:title, summary=:summary,"
+                . " content=:content, actions=:actions, subcategoryId=:subcategoryId WHERE id = :id";
+
+        $st = $conn->prepare($sql);
+        $st->bindValue(":publicationDate", $this->publicationDate, PDO::PARAM_INT);
+        $st->bindValue(":categoryId", $this->categoryId, PDO::PARAM_INT);
+        $st->bindValue(":subcategoryId", $this->subcategoryId, PDO::PARAM_INT);
+        $st->bindValue(":title", $this->title, PDO::PARAM_STR);
+        $st->bindValue(":summary", $this->summary, PDO::PARAM_STR);
+        $st->bindValue(":content", $this->content, PDO::PARAM_STR);
+        $st->bindValue(":actions", $this->actions, PDO::PARAM_STR);
+        $st->bindValue(":id", $this->id, PDO::PARAM_INT);
+        $st->execute();
+
+
+        $sql = "DELETE FROM authors WHERE articleId=:articleId";
+        $st = $conn->prepare($sql);
+        $st->bindValue(":articleId", $this->id, PDO::PARAM_INT);
+        $st->execute();
+
+        foreach ($this->authors as $userId) {
+            $sql = "INSERT INTO authors (userId, articleId) 
+                VALUES (:userId, :articleId)";
+            $st = $conn->prepare($sql);
+            $st->bindValue(":userId", $userId, PDO::PARAM_INT);
+            $st->bindValue(":articleId", $this->id, PDO::PARAM_INT);
+            $st->execute();
+        }
+        $conn = null;
     }
 
 
@@ -343,10 +470,17 @@ class Article
       // Есть ли у объекта статьи ID?
       if ( is_null( $this->id ) ) trigger_error ( "Article::delete(): Attempt to delete an Article object that does not have its ID property set.", E_USER_ERROR );
 
+      
       // Удаляем статью
       $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
-      $st = $conn->prepare ( "DELETE FROM articles WHERE id = :id LIMIT 1" );
-      $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
+      
+      $sql = "DELETE FROM authors WHERE articleId=:articleId";
+      $st = $conn->prepare($sql);
+      $st->bindValue(":articleId", $this->id, PDO::PARAM_INT);
+      $st->execute();
+
+      $st = $conn->prepare("DELETE FROM articles WHERE id = :id LIMIT 1");
+      $st->bindValue(":id", $this->id, PDO::PARAM_INT);
       $st->execute();
       $conn = null;
     }

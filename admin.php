@@ -140,6 +140,8 @@ function newArticle() {
         $results['categories'] = $data['results'];
         $data = Subcategory::getList();
         $results['subcategories'] = $data['results'];
+        $data = User::getList();
+        $results['authors'] = $data['results'];
         require( TEMPLATE_PATH . "/admin/editArticle.php" );
     }
 }
@@ -156,14 +158,15 @@ function editArticle() {
     $results['formAction'] = "editArticle";
 
     if (isset($_POST['saveChanges'])) {
-
         // Пользователь получил форму редактирования статьи: сохраняем изменения
         if (!$article = Article::getById((int) $_POST['articleId'])) {
             header("Location: admin.php?error=articleNotFound");
             return;
         }
         //В зависимости от состояния чек-бокса переопределим значение поля
-        (int)$_POST['actions'] = ($_POST['actions'] == "on" ? 1 : 0);        
+        (int)$_POST['actions'] = ($_POST['actions'] == "on" ? 1 : 0);
+        //Очистим список авторов для обновления
+        $article->authors = [];
         $article->storeFormValues($_POST);
         $article->update();
         header("Location: admin.php?status=changesSaved");        
@@ -179,6 +182,8 @@ function editArticle() {
         $results['categories'] = $data['results'];
         $data = Subcategory::getList();
         $results['subcategories'] = $data['results'];
+        $data = User::getList();
+        $results['authors'] = $data['results'];
         require(TEMPLATE_PATH . "/admin/editArticle.php");
     }
 }
@@ -209,12 +214,17 @@ function listArticles() {
 
     $data = Subcategory::getList();
     $results['subcategories'] = array();
+    
+    
     foreach ($data['results'] as $subcategory) {
         $results['subcategories'][$subcategory->id] = $subcategory;
     }
     
     $results['pageTitle'] = "Все статьи";
 
+    $data = User::getList();
+    $results['authors'] = $data['results'];
+    
     if (isset($_GET['error'])) { // вывод сообщения об ошибке (если есть)
         if ($_GET['error'] == "articleNotFound")
             $results['errorMessage'] = "Error: Article not found.";

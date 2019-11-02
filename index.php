@@ -23,6 +23,9 @@ function initApplication()
         case 'viewArticle':
           viewArticle();
           break;
+        case 'viewArticleByAuthor':
+          viewArticleByAuthor();
+          break;
         default:
           homepage();
     }
@@ -48,6 +51,9 @@ function archive() {
             $results['subcategories'][$subcategory->id] = $subcategory;
         }
 
+        $data = User::getList();
+        $results['authors'] = $data['results'];
+        
         $results['pageHeading'] = $results['subcategory'] ? $results['subcategory']->description : "Article Archive";
         $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
 
@@ -69,7 +75,10 @@ function archive() {
         foreach ($data['results'] as $category) {
             $results['categories'][$category->id] = $category;
         }
-
+        
+        $data = User::getList();
+        $results['authors'] = $data['results'];
+        
         $results['pageHeading'] = $results['category'] ? $results['category']->name : "Article Archive";
         $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
 
@@ -77,6 +86,26 @@ function archive() {
     }
 }
 
+/**
+ * Отбор по автору
+ */
+function viewArticleByAuthor(){
+    $results = [];
+    if(isset($_GET['authorId'])){
+        $data = Article::getListByAuthor($_GET['authorId']);
+        $results['articles'] = $data['results'];
+        $results['totalRows'] = $data['totalRows'];
+
+        $results['author'] = User::getUserByID($_GET['authorId'])->login;
+        
+        $results['pageHeading'] = $results['author'];
+        $results['pageTitle'] = $results['pageHeading'] . " | Widget News";
+
+        require( TEMPLATE_PATH . "/viewArticleByAuthor.php" );
+    }else {
+        require(TEMPLATE_PATH . "/homepage.php");
+    }
+}
 /**
  * Загрузка страницы с конкретной статьёй
  * 
@@ -99,6 +128,9 @@ function viewArticle()
     
     $results['category'] = Category::getById($results['article']->categoryId);
     $results['pageTitle'] = $results['article']->title . " | Простая CMS";
+    
+    $data = User::getList();
+    $results['authors'] = $data['results'];
     
     require(TEMPLATE_PATH . "/viewArticle.php");
 }
@@ -125,6 +157,9 @@ function homepage()
     foreach ( $data['results'] as $subcategory ) {
         $results['subcategories'][$subcategory->id] = $subcategory;
     }
+    
+    $data = User::getList();
+    $results['authors'] = $data['results'];
     
     $results['pageTitle'] = "Простая CMS на PHP";
     

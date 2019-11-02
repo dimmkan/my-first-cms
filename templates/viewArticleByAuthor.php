@@ -46,18 +46,7 @@
                 <?php } ?>
             </h2>
             <p class="summary"><?php echo htmlspecialchars($article->summary) ?></p>
-            <span class="category">
-                    <?php
-                    $res = "";
-                    foreach ($results['authors'] as $author) {
-                        if (in_array($author->id, $article->authors)) {
-                            ?>
-                            <a href=".?action=viewArticleByAuthor&amp;authorId=<?php echo (in_array($author->id, $article->authors)) ? $author->id : "0"; ?>"><?php echo(in_array($author->id, $article->authors)) ? htmlspecialchars($author->login) : ""; ?></a>
-                            <?php
-                        }
-                    }
-                    ?>
-                </span>
+            <span class="category"><?php echo $results['author']?></span>
         </li>
     <?php } ?>
 
@@ -68,3 +57,4 @@
 <p><a href="./">Return to Homepage</a></p>
 
 <?php include "templates/include/footer.php" ?>
+
