@@ -1,12 +1,12 @@
 $(function(){
     console.log('Привет, это страый js ))');
-    init_get();
-    init_post();
+    init_get_new();
+    init_post_new();
 });
 
-function init_get()
+function init_get_new()
 {
-    $('a.ajaxArticleBodyByGet').one('click', function(){
+    $('a.newAjaxGet').one('click', function(){
         var contentId = $(this).attr('data-contentId');
         console.log('ID статьи = ', contentId);
         showLoaderIdentity();
@@ -34,9 +34,9 @@ function init_get()
     });
 }
 
-function init_post()
+function init_post_new()
 {
-    $('a.ajaxArticleBodyByPost').one('click', function(){
+    $('a.newAjaxPost').one('click', function(){
         var content = $(this).attr('data-contentId');
         showLoaderIdentity();
         $.ajax({
